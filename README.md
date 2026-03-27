@@ -1,5 +1,5 @@
 # FlockChatter
-C++ self-hosted Discord alternative, targeting Linux as server host.
+C++ self-hosted Discord alternative, targeting Linux and Windows as server host enviornments.
 
 # Planned features
 - Web UI
@@ -8,5 +8,6 @@ C++ self-hosted Discord alternative, targeting Linux as server host.
 - Video Chat
 - Https support
 - Owner/Admin/User permission levels
-- minimal dependencies
+- Minimal dependencies
 - Raspberry Pi compatable 
+- Minimal setup required
