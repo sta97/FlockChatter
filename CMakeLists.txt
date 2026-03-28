@@ -9,3 +9,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add executable
 add_executable(FlockChatter src/main.cpp)
+
+add_custom_command(
+    TARGET FlockChatter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/src/index.html
+            $<TARGET_FILE_DIR:FlockChatter>/index.html
+)
+
+add_custom_command(
+    TARGET FlockChatter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/src/index.html
+            ${CMAKE_BINARY_DIR}/index.html
+)
