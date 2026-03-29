@@ -1,6 +1,11 @@
 
-namespace Networking {
-class ServerSocket {
+
+namespace Networking
+{
+    int initWinSock();
+    void winSockCleanup();
     
-};
+    class ServerSocket
+    {
+    };
 }

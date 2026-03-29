@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include "networking/networking.hpp"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
@@ -9,16 +9,7 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 int main() {
-    WSADATA wsaData;
-
-    int iResult;
-
-    // Initialize Winsock
-    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if (iResult != 0) {
-        printf("WSAStartup failed: %d\n", iResult);
-        return 1;
-    }
+    Networking::initWinSock();
     #define DEFAULT_PORT "27015"
 
     struct addrinfo *result = NULL, *ptr = NULL, hints;
@@ -30,7 +21,7 @@ int main() {
     hints.ai_flags = AI_PASSIVE;
 
     // Resolve the local address and port to be used by the server
-    iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+    int iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
     if (iResult != 0) {
         printf("getaddrinfo failed: %d\n", iResult);
         WSACleanup();
@@ -150,7 +141,7 @@ int main() {
 
     // cleanup
     closesocket(ClientSocket);
-    WSACleanup();
+    Networking::winSockCleanup();
 
     return 0;
 }

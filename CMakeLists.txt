@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add executable
-add_executable(FlockChatter src/main.cpp)
+add_executable(FlockChatter src/main.cpp src/networking/networking.cpp)
 
 add_custom_command(
     TARGET FlockChatter POST_BUILD
