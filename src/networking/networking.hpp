@@ -1,5 +1,9 @@
 #include <string>
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdio.h>
+
 namespace Networking
 {
     int initWinSock();
@@ -7,6 +11,7 @@ namespace Networking
     
     class ClientSocket
     {
+    public:
         ClientSocket(SOCKET socket);
         void send(std::string data);
         std::string recv();
@@ -15,8 +20,9 @@ namespace Networking
 
     class ServerSocket
     {
-        ServerSocket(int port);
-        ClientSocket accept();
+    public:
+        ServerSocket(PCSTR port);
+        ClientSocket acceptClient();
         ~ServerSocket();
     };
 }
