@@ -11,7 +11,9 @@ namespace Networking
     
     class ClientSocket
     {
+        SOCKET socket;
     public:
+        ClientSocket();
         ClientSocket(SOCKET socket);
         void send(std::string data);
         std::string recv();
@@ -20,9 +22,10 @@ namespace Networking
 
     class ServerSocket
     {
+        SOCKET socket;
     public:
         ServerSocket(PCSTR port);
-        ClientSocket acceptClient();
+        ClientSocket accept();
         ~ServerSocket();
     };
 }

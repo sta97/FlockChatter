@@ -8,84 +8,39 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-int main() {
-    Networking::initWinSock();
-    Networking::ServerSocket serverSocket("8000");
-
-    
-
-    
-
-    
-
-    // No longer need server socket
-    
-
-#define DEFAULT_BUFLEN 65536
-
-    char recvbuf[DEFAULT_BUFLEN];
-    int iSendResult;
-    int recvbuflen = DEFAULT_BUFLEN;
-
-
-    std::ifstream file("index.html");  // Open the file
+std::string loadFromFile(std::string filename) {
+    std::ifstream file(filename);  // Open the file
 
     if (!file.is_open()) {
-        std::cerr << "Error: Could not open index.html" << std::endl;
-        return 1;
+        throw std::runtime_error("Error: Could not open " + filename);
     }
 
     std::string fileContents((std::istreambuf_iterator<char>(file)),
         (std::istreambuf_iterator<char>()));
-    
+
     file.close();
 
-    // Receive until the peer shuts down the connection
-    do {
+    return fileContents;
+}
 
-        iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-        if (iResult > 0) {
-            printf("Bytes received: %d\n", iResult);
-            for (int i = 0; i < iResult; ++i) {
-                std::cout << recvbuf[i];
-            }
-            std::cout << std::endl;
-            std::string response;
-            response += "HTTP/1.1 200 OK\n";
-            response += "\n";
-            response += fileContents;
-            // Echo the buffer back to the sender
-            iSendResult = send(ClientSocket, response.c_str(), response.size(), 0);
-            if (iSendResult == SOCKET_ERROR) {
-                printf("send failed: %d\n", WSAGetLastError());
-                closesocket(ClientSocket);
-                WSACleanup();
-                return 1;
-            }
-            printf("Bytes sent: %d\n", iSendResult);
-        }
-        else if (iResult == 0)
-            printf("Connection closing...\n");
-        else {
-            printf("recv failed: %d\n", WSAGetLastError());
-            closesocket(ClientSocket);
-            WSACleanup();
-            return 1;
-        }
+int main() {
+    Networking::initWinSock();
+    Networking::ServerSocket serverSocket("8000");
 
-    } while (iResult > 0);
+    std::string index = loadFromFile("index.html");
 
-    // shutdown the send half of the connection since no more data will be sent
-    iResult = shutdown(ClientSocket, SD_SEND);
-    if (iResult == SOCKET_ERROR) {
-        printf("shutdown failed: %d\n", WSAGetLastError());
-        closesocket(ClientSocket);
-        WSACleanup();
-        return 1;
+    std::string response;
+    response += "HTTP/1.1 200 OK\n";
+    response += "\n";
+    response += index;
+
+    while (true) {
+        Networking::ClientSocket socket = serverSocket.accept();
+        std::string recv = socket.recv();
+        std::cout << "received:" << std::endl << recv << std::endl << std::endl;
+        socket.send(response);
     }
 
-    // cleanup
-    closesocket(ClientSocket);
     Networking::winSockCleanup();
 
     return 0;
