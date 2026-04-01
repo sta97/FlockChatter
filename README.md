@@ -9,5 +9,5 @@ C++ self-hosted Discord alternative, targeting Linux and Windows as server host 
 - Https support
 - Owner/Admin/User permission levels
 - Minimal dependencies
-- Raspberry Pi compatable 
+- Raspberry Pi compatible 
 - Minimal setup required
