@@ -14,30 +14,8 @@ add_executable(FlockChatter
     src/http/http.cpp
 )
 
-add_custom_command(
-    TARGET FlockChatter POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/src/index.html
-            $<TARGET_FILE_DIR:FlockChatter>/index.html
-)
-
-add_custom_command(
-    TARGET FlockChatter POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/src/index.html
-            ${CMAKE_BINARY_DIR}/index.html
-)
-
-add_custom_command(
-    TARGET FlockChatter POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/src/favicon.ico
-            $<TARGET_FILE_DIR:FlockChatter>/favicon.ico
-)
-
-add_custom_command(
-    TARGET FlockChatter POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/src/favicon.ico
-            ${CMAKE_BINARY_DIR}/favicon.ico
+add_custom_command(TARGET FlockChatter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets
+    ${CMAKE_BINARY_DIR}/assets
 )

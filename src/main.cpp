@@ -7,7 +7,7 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 std::string loadFromFile(std::string filename) {
-    std::ifstream file(filename);  // Open the file
+    std::ifstream file(filename, std::ios::binary);  // Open the file
 
     if (!file.is_open()) {
         throw std::runtime_error("Error: Could not open " + filename);
@@ -27,19 +27,32 @@ int main() {
 
     std::cout << "listening at http://127.0.0.1:8000/" << std::endl;
 
-    std::string index = loadFromFile("index.html");
-
-    std::string icon = loadFromFile("favicon.ico");
+    std::string index = loadFromFile("assets/index.html");
+    std::string icon = loadFromFile("assets/favicon.ico");
+    std::string image = loadFromFile("assets/image.png");
 
     std::string responseIndex;
-    responseIndex += "HTTP/1.1 200 OK\n";
-    responseIndex += "\n";
+    responseIndex += "HTTP/1.1 200 OK\r\n";
+    responseIndex += "Content-Length: " + std::to_string(index.size()) + "\r\n";
+    responseIndex += "\r\n";
+    std::cout << responseIndex << std::endl;
     responseIndex += index;
 
     std::string responseFavicon;
-    responseFavicon += "HTTP/1.1 200 OK\n";
-    responseFavicon += "\n";
+    responseFavicon += "HTTP/1.1 200 OK\r\n";
+    responseFavicon += "Content-Type: image/x-icon\r\n";
+    responseFavicon += "Content-Length: " + std::to_string(icon.size()) + "\r\n";
+    responseFavicon += "\r\n";
+    std::cout << responseFavicon << std::endl;
     responseFavicon += icon;
+
+    std::string responseImage;
+    responseImage += "HTTP/1.1 200 OK\r\n";
+    responseImage += "Content-Type: image/png\r\n";
+    responseImage += "Content-Length: " + std::to_string(image.size()) + "\r\n";
+    responseImage += "\r\n";
+    std::cout << responseImage << std::endl;
+    responseImage += image;
 
     std::string response404 = "HTTP/1.1 404 Not Found";
 
@@ -53,6 +66,8 @@ int main() {
             socket.send(responseIndex);
         else if (path == "/favicon.ico")
             socket.send(responseFavicon);
+        else if (path == "/image.png")
+            socket.send(responseImage);
         else
             socket.send(response404);
     }
