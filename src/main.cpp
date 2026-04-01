@@ -2,9 +2,7 @@
 #include <fstream>
 #include <string>
 #include "networking/networking.hpp"
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdio.h>
+#include "http/http.hpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -27,18 +25,36 @@ int main() {
     Networking::initWinSock();
     Networking::ServerSocket serverSocket("8000");
 
+    std::cout << "listening at http://127.0.0.1:8000/" << std::endl;
+
     std::string index = loadFromFile("index.html");
 
-    std::string response;
-    response += "HTTP/1.1 200 OK\n";
-    response += "\n";
-    response += index;
+    std::string icon = loadFromFile("favicon.ico");
+
+    std::string responseIndex;
+    responseIndex += "HTTP/1.1 200 OK\n";
+    responseIndex += "\n";
+    responseIndex += index;
+
+    std::string responseFavicon;
+    responseFavicon += "HTTP/1.1 200 OK\n";
+    responseFavicon += "\n";
+    responseFavicon += icon;
+
+    std::string response404 = "HTTP/1.1 404 Not Found";
 
     while (true) {
         Networking::ClientSocket socket = serverSocket.accept();
-        std::string recv = socket.recv();
-        std::cout << "received:" << std::endl << recv << std::endl << std::endl;
-        socket.send(response);
+        std::string message = socket.recv();
+        std::cout << "received:" << std::endl << message << std::endl << std::endl;
+        std::string path = http::getPath(message);
+        std::cout << "path: " << path << std::endl << std::endl;
+        if (path == "/")
+            socket.send(responseIndex);
+        else if (path == "/favicon.ico")
+            socket.send(responseFavicon);
+        else
+            socket.send(response404);
     }
 
     Networking::winSockCleanup();
