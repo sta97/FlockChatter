@@ -51,9 +51,16 @@ int main() {
         else if (path == "/login") {
             std::string response;
             std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
-            response += loginData[0].first + ": " + loginData[0].second + "\n";
-            response += "<br/>\n";
-            response += loginData[1].first + ": " + loginData[1].second + "\n";
+            if (loginData.size() == 2) {
+                response += "<a href=\"/\">Home</a>";
+                response += "<br />\n";
+                response += loginData[0].first + ": " + loginData[0].second + "\n";
+                response += "<br />\n";
+                response += loginData[1].first + ": " + loginData[1].second + "\n";
+            }
+            else {
+                response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
+            }
             response = http::createResponse(response, "text/html; charset=utf-8");
             socket.send(response);
         }
