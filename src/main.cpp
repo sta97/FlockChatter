@@ -31,29 +31,9 @@ int main() {
     std::string icon = loadFromFile("assets/favicon.ico");
     std::string image = loadFromFile("assets/image.png");
 
-    std::string responseIndex;
-    responseIndex += "HTTP/1.1 200 OK\r\n";
-    responseIndex += "Content-Length: " + std::to_string(index.size()) + "\r\n";
-    responseIndex += "\r\n";
-    std::cout << responseIndex << std::endl;
-    responseIndex += index;
-
-    std::string responseFavicon;
-    responseFavicon += "HTTP/1.1 200 OK\r\n";
-    responseFavicon += "Content-Type: image/x-icon\r\n";
-    responseFavicon += "Content-Length: " + std::to_string(icon.size()) + "\r\n";
-    responseFavicon += "\r\n";
-    std::cout << responseFavicon << std::endl;
-    responseFavicon += icon;
-
-    std::string responseImage;
-    responseImage += "HTTP/1.1 200 OK\r\n";
-    responseImage += "Content-Type: image/png\r\n";
-    responseImage += "Content-Length: " + std::to_string(image.size()) + "\r\n";
-    responseImage += "\r\n";
-    std::cout << responseImage << std::endl;
-    responseImage += image;
-
+    std::string responseIndex = http::createResponse(index, "text/html; charset=utf-8");
+    std::string responseFavicon = http::createResponse(icon, "image/x-icon");
+    std::string responseImage = http::createResponse(image, "image/png");
     std::string response404 = "HTTP/1.1 404 Not Found";
 
     while (true) {
@@ -68,6 +48,15 @@ int main() {
             socket.send(responseFavicon);
         else if (path == "/image.png")
             socket.send(responseImage);
+        else if (path == "/login") {
+            std::string response;
+            std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
+            response += loginData[0].first + ": " + loginData[0].second + "\n";
+            response += "<br/>\n";
+            response += loginData[1].first + ": " + loginData[1].second + "\n";
+            response = http::createResponse(response, "text/html; charset=utf-8");
+            socket.send(response);
+        }
         else
             socket.send(response404);
     }
