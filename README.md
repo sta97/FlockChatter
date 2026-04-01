@@ -1,5 +1,5 @@
 # FlockChatter
-C++ self-hosted Discord alternative, targeting Linux and Windows as server host enviornments.
+C++ self-hosted Discord alternative, targeting Linux and Windows as server host environments.
 
 # Planned features
 - Web UI
