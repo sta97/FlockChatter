@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "networking.hpp"
 #include <stdexcept>
+#include <vector>
 
 namespace Networking
 {
@@ -42,13 +43,12 @@ namespace Networking
 	}
 
 	std::string ClientSocket::recv() {
-#define DEFAULT_BUFLEN 65536
-		char recvbuf[DEFAULT_BUFLEN];
-		int recvbuflen = DEFAULT_BUFLEN;
+		std::vector<char> buffer;
+		buffer.resize(65536);
 
-		int result = ::recv(socket, recvbuf, recvbuflen - 1, 0);
+		int result = ::recv(socket, buffer.data(), buffer.size() - 1, 0);
 		if (result > 0) {
-			return std::string(recvbuf, result);
+			return std::string(buffer.data(), result);
 		}
 		else if (result == 0) {
 			return std::string();

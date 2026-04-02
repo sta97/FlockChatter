@@ -4,10 +4,10 @@ namespace http
 {
     std::string getPath(std::string message)
     {
-        int start = message.find(' ');
-        int end = message.find(' ', start+1);
+        size_t start = message.find(' ');
+        size_t end = message.find(' ', start+1);
         std::string path;
-        for(int i = start+1; i < end; ++i)
+        for(size_t i = start+1; i < end; ++i)
             path += message[i];
         return path;
     }
