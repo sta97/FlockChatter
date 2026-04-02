@@ -3,6 +3,7 @@
 #include <string>
 #include "networking/networking.hpp"
 #include "http/http.hpp"
+#include "login/login.hpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -22,6 +23,7 @@ std::string loadFromFile(std::string filename) {
 }
 
 int main() {
+    login::UserDatabase users;
     Networking::initWinSock();
     Networking::ServerSocket serverSocket("8000");
 

@@ -12,6 +12,7 @@ add_executable(FlockChatter
     src/main.cpp 
     src/networking/networking.cpp
     src/http/http.cpp
+    src/login/login.cpp
 )
 
 add_custom_command(TARGET FlockChatter POST_BUILD
