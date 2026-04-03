@@ -55,11 +55,13 @@ int main() {
             std::string response;
             std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
             if (loginData.size() == 2) {
-                response += "<a href=\"/\">Home</a>";
-                response += "<br />\n";
-                response += loginData[0].first + ": " + loginData[0].second + "\n";
-                response += "<br />\n";
-                response += loginData[1].first + ": " + loginData[1].second + "\n";
+                if (loginData[0].first == "username" && loginData[1].first == "password") {
+                    if (users.login(loginData[0].second, loginData[1].second))
+                        response = "<a href=\"/\">Home</a> <br /> logged in as " + loginData[0].second + " with user ID " + std::to_string(users.findID(loginData[0].second));
+                    else
+                        response = "<a href=\"/\">Home</a> <br /> invalid username or password";
+                }else 
+                    response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
             }
             else {
                 response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";

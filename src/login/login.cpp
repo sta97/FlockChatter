@@ -56,6 +56,23 @@ namespace login {
         file.close();
     }
 
+    bool UserDatabase::login(std::string username, std::string password) {
+        for (User u : users)
+            if (u.username == username)
+                if (u.password == password)
+                    return true;
+                else
+                    return false;
+        return false;
+    }
+
+    int UserDatabase::findID(std::string username) {
+        for (User u : users)
+            if (u.username == username)
+                return u.id;
+        return -1;
+    }
+
     bool UserDatabase::addUser(std::string username, std::string password) {
         int id = 0;
         for (User u : users)

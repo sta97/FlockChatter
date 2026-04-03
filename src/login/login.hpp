@@ -17,14 +17,14 @@ namespace login {
     };
 
     class UserDatabase {
-        std::vector<User> users;
         void loadUsers();
         void saveUsers();
         public:
+        std::vector<User> users;
         UserDatabase();
         ~UserDatabase();
-        std::string findUsername(unsigned int id);
-        std::string findID(std::string username);
+        std::string findUsername(int id);
+        int findID(std::string username);
         bool login(std::string username, std::string password);
         bool addUser(std::string username, std::string password);
     };

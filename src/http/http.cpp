@@ -1,4 +1,5 @@
 #include "http.hpp"
+#include <iostream>
 
 namespace http
 {
@@ -26,7 +27,7 @@ namespace http
     std::vector<std::pair<std::string, std::string>> parsePostBody(std::string message)
     {
         std::vector<std::pair<std::string, std::string>> parsed;
-        size_t bodyStart = message.find_last_of('\r');
+        size_t bodyStart = message.find_last_of('\n');
         if (bodyStart == std::string::npos)
             return parsed;
         std::string name, content;
