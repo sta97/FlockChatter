@@ -24,6 +24,7 @@ std::string loadFromFile(std::string filename) {
 
 int main() {
     login::UserDatabase users;
+
     Networking::initWinSock();
     Networking::ServerSocket serverSocket("8000");
 

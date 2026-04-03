@@ -2,13 +2,18 @@
 #include <vector>
 
 namespace login {
+    enum PermissionLevel {
+        OWNER = 0,
+        ADMIN = 1,
+        USER = 2
+    };
+
     class User {
         public:
-        std::string id;
+        int id = -1;
         std::string username;
         std::string password;
-        bool owner;
-        bool admin;
+        PermissionLevel permissions = PermissionLevel::USER;
     };
 
     class UserDatabase {
@@ -18,7 +23,7 @@ namespace login {
         public:
         UserDatabase();
         ~UserDatabase();
-        std::string findUsername(std::string id);
+        std::string findUsername(unsigned int id);
         std::string findID(std::string username);
         bool login(std::string username, std::string password);
         bool addUser(std::string username, std::string password);
