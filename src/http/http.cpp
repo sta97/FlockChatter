@@ -7,6 +7,8 @@ namespace http
     {
         size_t start = message.find(' ');
         size_t end = message.find(' ', start+1);
+        if (start == std::string::npos || end == std::string::npos)
+            return "";
         std::string path;
         for(size_t i = start+1; i < end; ++i)
             path += message[i];
