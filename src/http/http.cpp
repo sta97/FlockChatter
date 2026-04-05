@@ -56,4 +56,24 @@ namespace http
         content = std::string();
         return parsed;
     }
+
+    std::vector<std::pair<std::string, std::string>> parseCookies(std::string message)
+    {
+        std::vector<std::pair<std::string, std::string>> parsed;
+        size_t next = 0;
+        while (message.find("Cookie:", next) != std::string::npos) {
+            size_t cookieStart = message.find("Cookie:", next);
+            cookieStart = message.find(" ", cookieStart) + 1;
+            std::string cookieName = "";
+            for (size_t i = cookieStart; message[i] != '='; ++i)
+                cookieName += message[i];
+            cookieStart = message.find("=", cookieStart) + 1;
+            std::string cookieData = "";
+            for (size_t i = cookieStart; message[i] != '\r'; ++i)
+                cookieData += message[i];
+            parsed.push_back(std::make_pair(cookieName, cookieData));
+            next = message.find("\n", cookieStart);
+        }
+        return parsed;
+    }
 }

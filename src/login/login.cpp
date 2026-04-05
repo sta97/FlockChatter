@@ -66,6 +66,13 @@ namespace login {
         return false;
     }
 
+    std::string UserDatabase::findUsername(int id) {
+        for (User u : users)
+            if (u.id == id)
+                return u.username;
+        return "";
+    }
+
     int UserDatabase::findID(std::string username) {
         for (User u : users)
             if (u.username == username)
@@ -154,5 +161,9 @@ namespace login {
 
     std::time_t SessionDatabase::sessionAge(int sessionID) {
         return sessions[sessionID].second;
+    }
+
+    int SessionDatabase::getUserID(int sessionID) {
+        return sessions[sessionID].first;
     }
 }

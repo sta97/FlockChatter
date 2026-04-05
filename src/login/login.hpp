@@ -41,5 +41,6 @@ namespace login {
         int startSession(int userID);
         void endSession(int sessionID);
         std::time_t sessionAge(int sessionID);
+        int getUserID(int sessionID);
     };
 }
