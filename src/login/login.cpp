@@ -91,4 +91,68 @@ namespace login {
         saveUsers();
         return true;
     }
+
+    void SessionDatabase::loadSessions() {
+        sessions.clear();
+        if (!std::filesystem::exists("sessions.txt"))
+            return;
+        std::ifstream file("sessions.txt");
+        std::string line;
+        while (std::getline(file, line)) {
+            int sessionID = std::stoi(line);
+            std::getline(file, line);
+            int userID = std::stoi(line);
+            std::getline(file, line);
+            std::time_t sessionStart = std::stoll(line);
+            sessions.insert({sessionID,{userID, sessionStart}});
+        }
+        file.close();
+    }
+
+    void SessionDatabase::saveSessions() {
+        std::ofstream file("sessions.txt");
+        for (const auto& pair : sessions) {
+            file << pair.first << "\n";
+            file << pair.second.first << "\n";
+            file << pair.second.second << "\n";
+        }
+        file.close();
+    }
+
+    SessionDatabase::SessionDatabase() {
+        loadSessions();
+    }
+
+    SessionDatabase::~SessionDatabase() {
+        saveSessions();
+    }
+
+    int SessionDatabase::startSession(int userID) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::uniform_int_distribution<int> dist(
+            std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::max()
+        );
+
+        int sessionID = dist(gen);
+
+        std::time_t sessionStart = std::time(nullptr);
+
+        sessions.insert({ sessionID,{userID, sessionStart} });
+
+        saveSessions();
+
+        return sessionID;
+    }
+
+    void SessionDatabase::endSession(int sessionID) {
+        sessions.erase(sessionID);
+        saveSessions();
+    }
+
+    std::time_t SessionDatabase::sessionAge(int sessionID) {
+        return sessions[sessionID].second;
+    }
 }

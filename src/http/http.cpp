@@ -15,12 +15,14 @@ namespace http
         return path;
     }
 
-    std::string createResponse(std::string body, std::string contentType)
+    std::string createResponse(std::string body, std::string contentType, std::vector<std::pair<std::string, std::string>> setCookies)
     {
         std::string response;
         response += "HTTP/1.1 200 OK\r\n";
         response += "Content-Type: " + contentType + "\r\n";
         response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+        for (auto cookie : setCookies)
+            response += "Set-Cookie: " + cookie.first + "=" + cookie.second + "\r\n";
         response += "\r\n";
         response += body;
         return response;

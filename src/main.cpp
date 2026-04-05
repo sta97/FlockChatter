@@ -24,6 +24,7 @@ std::string loadFromFile(std::string filename) {
 
 int main() {
     login::UserDatabase users;
+    login::SessionDatabase sessions;
 
     Networking::initWinSock();
     Networking::ServerSocket serverSocket("8000");
@@ -54,11 +55,15 @@ int main() {
         else if (path == "/login") {
             std::string response;
             std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
+            std::vector<std::pair<std::string, std::string>> cookies = {};
             if (loginData.size() == 2) {
                 if (loginData[0].first == "username" && loginData[1].first == "password") {
-                    if (users.login(loginData[0].second, loginData[1].second))
-                        response = "<a href=\"/\">Home</a> <br /> logged in as " + loginData[0].second + " with user ID " + std::to_string(users.findID(loginData[0].second));
-                    else
+                    if (users.login(loginData[0].second, loginData[1].second)) {
+                        int userID = users.findID(loginData[0].second);
+                        response = "<a href=\"/\">Home</a> <br /> logged in as " + loginData[0].second + " with user ID " + std::to_string(userID);
+                        int sessionID = sessions.startSession(userID);
+                        cookies.push_back(std::make_pair("session",std::to_string(sessionID)));
+                    } else
                         response = "<a href=\"/\">Home</a> <br /> invalid username or password";
                 }else 
                     response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
@@ -66,7 +71,7 @@ int main() {
             else {
                 response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
             }
-            response = http::createResponse(response, "text/html; charset=utf-8");
+            response = http::createResponse(response, "text/html; charset=utf-8", cookies);
             socket.send(response);
         }
         else
