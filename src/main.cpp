@@ -33,21 +33,25 @@ int main() {
 
 	std::string index = loadFromFile("assets/index.html");
 	std::string indexLoggedin = loadFromFile("assets/indexLoggedin.html");
+	std::string audioTest = loadFromFile("assets/audioTest.html");
 	std::string logout = loadFromFile("assets/logout.html");
 	std::string icon = loadFromFile("assets/favicon.ico");
 	std::string image = loadFromFile("assets/image.png");
 
 	std::string responseIndex = http::createResponse(index, "text/html; charset=utf-8");
+	std::string responseAudioTest = http::createResponse(audioTest, "text/html; charset=utf-8");
 	std::string responseLogout = http::createResponse(logout, "text/html; charset=utf-8", { {"session",""} });
 	std::string responseFavicon = http::createResponse(icon, "image/x-icon");
 	std::string responseImage = http::createResponse(image, "image/png");
 	std::string response404 = "HTTP/1.1 404 Not Found";
 
+	std::string responseAudio = http::createResponse("", "application/octet-stream");
+
 	while (true) {
 		Networking::ClientSocket socket = serverSocket.accept();
 
 		std::string message = socket.recv();
-		std::cout << "received:" << std::endl << message << std::endl << std::endl;
+		//std::cout << "received:" << std::endl << message << std::endl << std::endl;
 		std::string path = http::getPath(message);
 		std::cout << "path: " << path << std::endl << std::endl;
 		std::vector<std::pair<std::string, std::string>> cookies = http::parseCookies(message);
@@ -72,6 +76,12 @@ int main() {
 				response = responseIndex;
 			socket.send(response);
 		}
+		else if (path == "/audioTest")
+			socket.send(responseAudioTest);
+		else if (path == "/sendAudio" && http::getBody(message).size() > 0)
+			responseAudio = http::createResponse(http::getBody(message), "application/octet-stream");
+		else if (path == "/getAudio")
+			socket.send(responseAudio);
 		else if (path == "/favicon.ico")
 			socket.send(responseFavicon);
 		else if (path == "/image.png")

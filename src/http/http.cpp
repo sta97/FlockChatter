@@ -76,4 +76,13 @@ namespace http
         }
         return parsed;
     }
+
+    std::string getBody(std::string message)
+    {
+        size_t pos = message.rfind("\r\n");
+        std::string data = "";
+        for (size_t i = pos + 2; i < message.size(); ++i)
+            data += message[i];
+        return data;
+    }
 }

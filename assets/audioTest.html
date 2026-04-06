@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audio Stream Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    button {
+      margin-right: 8px;
+      padding: 10px 16px;
+      font-size: 16px;
+    }
+    #status {
+      margin-top: 16px;
+      white-space: pre-wrap;
+      background: #f4f4f4;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Audio Streaming Demo</h1>
+  <p>
+    Sends 100 ms microphone PCM chunks to <code>/sendAudio</code>,
+    fetches playback chunks from <code>/getAudio</code>, and uses a
+    100 ms jitter buffer.
+  </p>
+
+  <button id="startBtn">Start</button>
+  <button id="stopBtn" disabled>Stop</button>
+
+  <div id="status">Idle</div>
+
+  <script>
+    const SAMPLE_RATE = 48000;
+    const CHANNELS = 1;
+    const CHUNK_MS = 100;
+    const JITTER_BUFFER_MS = 100;
+    const POLL_INTERVAL_MS = 50;
+
+    let audioContext = null;
+    let inputStream = null;
+    let sourceNode = null;
+    let workletNode = null;
+    let pollingTimer = null;
+    let isRunning = false;
+
+    let playbackStarted = false;
+    let scheduledTime = 0;
+    const incomingQueue = [];
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function createWorkletModuleUrl() {
+      const workletCode = `
+        class PcmCaptureProcessor extends AudioWorkletProcessor {
+          constructor(options) {
+            super();
+            const processorOptions = options.processorOptions || {};
+            this.channels = processorOptions.channels || 1;
+            this.chunkMs = processorOptions.chunkMs || 100;
+            this.framesPerChunk = Math.round((sampleRate * this.chunkMs) / 1000);
+            this.buffer = new Float32Array(this.framesPerChunk);
+            this.writeOffset = 0;
+          }
+
+          process(inputs) {
+            const input = inputs[0];
+            if (!input || !input[0]) return true;
+
+            const channel0 = input[0];
+            let readOffset = 0;
+
+            while (readOffset < channel0.length) {
+              const remainingChunkSpace = this.framesPerChunk - this.writeOffset;
+              const remainingInput = channel0.length - readOffset;
+              const copyCount = Math.min(remainingChunkSpace, remainingInput);
+
+              this.buffer.set(
+                channel0.subarray(readOffset, readOffset + copyCount),
+                this.writeOffset
+              );
+
+              this.writeOffset += copyCount;
+              readOffset += copyCount;
+
+              if (this.writeOffset === this.framesPerChunk) {
+                const out = new Float32Array(this.buffer);
+                this.port.postMessage(
+                  { type: "chunk", pcm: out.buffer },
+                  [out.buffer]
+                );
+                this.writeOffset = 0;
+              }
+            }
+
+            return true;
+          }
+        }
+
+        registerProcessor("pcm-capture-processor", PcmCaptureProcessor);
+      `;
+
+      const blob = new Blob([workletCode], { type: "application/javascript" });
+      return URL.createObjectURL(blob);
+    }
+
+    async function start() {
+      if (isRunning) return;
+
+      try {
+        isRunning = true;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        setStatus("Starting...");
+
+        audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+
+        const workletUrl = createWorkletModuleUrl();
+        await audioContext.audioWorklet.addModule(workletUrl);
+        URL.revokeObjectURL(workletUrl);
+
+        inputStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: CHANNELS,
+            sampleRate: SAMPLE_RATE,
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          }
+        });
+
+        sourceNode = audioContext.createMediaStreamSource(inputStream);
+
+        workletNode = new AudioWorkletNode(audioContext, "pcm-capture-processor", {
+          processorOptions: {
+            targetSampleRate: SAMPLE_RATE,
+            chunkMs: CHUNK_MS,
+            channels: CHANNELS,
+          }
+        });
+
+        workletNode.port.onmessage = async (event) => {
+          const { type, pcm } = event.data;
+          if (type !== "chunk" || !isRunning) return;
+
+          try {
+            await fetch("/sendAudio", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/octet-stream",
+                "X-Sample-Rate": String(SAMPLE_RATE),
+                "X-Channels": String(CHANNELS),
+                "X-Format": "f32le",
+              },
+              body: pcm
+            });
+          } catch (err) {
+            console.error("POST /sendAudio failed:", err);
+          }
+        };
+
+        sourceNode.connect(workletNode);
+
+        playbackStarted = false;
+        scheduledTime = audioContext.currentTime;
+        incomingQueue.length = 0;
+
+        startPolling();
+
+        setStatus("Running\\nCapturing microphone and streaming audio.");
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to start: " + err.message);
+        await stop();
+      }
+    }
+
+    async function stop() {
+      isRunning = false;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      if (pollingTimer) {
+        clearInterval(pollingTimer);
+        pollingTimer = null;
+      }
+
+      if (workletNode) {
+        try { workletNode.disconnect(); } catch {}
+        workletNode = null;
+      }
+
+      if (sourceNode) {
+        try { sourceNode.disconnect(); } catch {}
+        sourceNode = null;
+      }
+
+      if (inputStream) {
+        inputStream.getTracks().forEach(track => track.stop());
+        inputStream = null;
+      }
+
+      if (audioContext) {
+        try { await audioContext.close(); } catch {}
+        audioContext = null;
+      }
+
+      playbackStarted = false;
+      scheduledTime = 0;
+      incomingQueue.length = 0;
+
+      setStatus("Stopped");
+    }
+
+    function startPolling() {
+      pollingTimer = setInterval(async () => {
+        if (!isRunning || !audioContext) return;
+
+        try {
+          const res = await fetch("/getAudio", {
+            method: "GET",
+            cache: "no-store"
+          });
+
+          if (res.status === 204) {
+            updateBufferStatus();
+            return;
+          }
+
+          if (!res.ok) {
+            console.error("GET /getAudio failed:", res.status);
+            updateBufferStatus();
+            return;
+          }
+
+          const arrayBuffer = await res.arrayBuffer();
+          if (arrayBuffer.byteLength === 0) {
+            updateBufferStatus();
+            return;
+          }
+
+          const chunk = new Float32Array(arrayBuffer);
+          incomingQueue.push(chunk);
+
+          drainPlaybackQueue();
+          updateBufferStatus();
+        } catch (err) {
+          console.error("GET /getAudio error:", err);
+          updateBufferStatus();
+        }
+      }, POLL_INTERVAL_MS);
+    }
+
+    function drainPlaybackQueue() {
+      if (!audioContext) return;
+
+      const bufferedMs = incomingQueue.length * CHUNK_MS;
+
+      if (!playbackStarted) {
+        if (bufferedMs < JITTER_BUFFER_MS) return;
+        playbackStarted = true;
+        scheduledTime = audioContext.currentTime + 0.02;
+      }
+
+      while (incomingQueue.length > 0) {
+        const chunk = incomingQueue.shift();
+        schedulePcmChunk(chunk);
+      }
+    }
+
+    function schedulePcmChunk(float32Chunk) {
+      if (!audioContext) return;
+
+      const frameCount = float32Chunk.length;
+      const audioBuffer = audioContext.createBuffer(CHANNELS, frameCount, SAMPLE_RATE);
+      audioBuffer.copyToChannel(float32Chunk, 0);
+
+      const src = audioContext.createBufferSource();
+      src.buffer = audioBuffer;
+      src.connect(audioContext.destination);
+
+      const now = audioContext.currentTime;
+      if (scheduledTime < now + 0.01) {
+        scheduledTime = now + 0.01;
+      }
+
+      src.start(scheduledTime);
+      scheduledTime += audioBuffer.duration;
+    }
+
+    function updateBufferStatus() {
+      const queuedMs = incomingQueue.length * CHUNK_MS;
+      setStatus(
+        [
+          isRunning ? "Running" : "Stopped",
+          "Queued chunks: " + incomingQueue.length,
+          "Buffered audio: " + queuedMs + " ms",
+          "Playback started: " + (playbackStarted ? "yes" : "no")
+        ].join("\\n")
+      );
+    }
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+  </script>
+</body>
+</html>
