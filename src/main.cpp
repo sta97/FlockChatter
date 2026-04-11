@@ -80,9 +80,10 @@ int main() {
 			socket.send(responseAudioTest);
 		else if (path == "/sendAudio" && http::getBody(message).size() > 0)
 			responseAudio = http::createResponse(http::getBody(message), "application/octet-stream");
-		else if (path == "/getAudio")
+		else if (path == "/getAudio") {
 			socket.send(responseAudio);
-		else if (path == "/favicon.ico")
+			responseAudio = http::createResponse("", "application/octet-stream");
+		}else if (path == "/favicon.ico")
 			socket.send(responseFavicon);
 		else if (path == "/image.png")
 			socket.send(responseImage);

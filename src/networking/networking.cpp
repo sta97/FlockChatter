@@ -44,7 +44,7 @@ namespace Networking
 
 	std::string ClientSocket::recv() {
 		std::vector<char> buffer;
-		buffer.resize(65536);
+		buffer.resize(1048576);
 
 		int result = ::recv(socket, buffer.data(), buffer.size() - 1, 0);
 		if (result > 0) {
