@@ -22,9 +22,26 @@ std::string loadFromFile(std::string filename) {
 	return fileContents;
 }
 
+void checkServername()
+{
+	std::ifstream file("servername.txt");
+	std::string servername;
+	if (file.good())
+		file >> servername;
+	if (servername.size() == 0)
+	{
+		std::cout << "Enter server name: ";
+		std::cin >> servername;
+		std::ofstream file("servername.txt");
+		file << servername;
+	}
+}
+
 int main() {
 	login::UserDatabase users;
 	login::SessionDatabase sessions;
+
+	checkServername();
 
 	Networking::initWinSock();
 	Networking::ServerSocket serverSocket("8000");
@@ -38,7 +55,6 @@ int main() {
 	std::string icon = loadFromFile("assets/favicon.ico");
 	std::string image = loadFromFile("assets/image.png");
 
-	std::string responseIndex = http::createResponse(index, "text/html; charset=utf-8");
 	std::string responseAudioTest = http::createResponse(audioTest, "text/html; charset=utf-8");
 	std::string responseLogout = http::createResponse(logout, "text/html; charset=utf-8", { {"session",""} });
 	std::string responseFavicon = http::createResponse(icon, "image/x-icon");
@@ -56,24 +72,33 @@ int main() {
 		std::cout << "path: " << path << std::endl << std::endl;
 		std::vector<std::pair<std::string, std::string>> cookies = http::parseCookies(message);
 		if (path == "/") {
-			std::string response;
+			std::string response = indexLoggedin;
 			if (cookies.size() == 1) {
 				if (cookies[0].first == "session" && cookies[0].second != "") {
 					std::string user = users.findUsername(sessions.getUserID(std::stoi(cookies[0].second)));
 					size_t usernameStart = indexLoggedin.find("<USER>");
-					for (size_t i = 0; i < usernameStart; ++i)
-						response += indexLoggedin[i];
-					response += user;
-					for (size_t i = usernameStart + 6; i < indexLoggedin.size(); ++i)
-						response += indexLoggedin[i];
+					response.replace(usernameStart, 6, user);
+					size_t servernameLoc = response.find("<SERVERNAME>");
+					std::string servername = loadFromFile("servername.txt");
+					response.replace(servernameLoc, 12, servername);
 					response = http::createResponse(response, "text/html; charset=utf-8");
 				}
 				else {
-					response = responseIndex;
+					response = index;
+					size_t servernameLoc = response.find("<SERVERNAME>");
+					std::string servername = loadFromFile("servername.txt");
+					response.replace(servernameLoc, 12, servername);
+					response = http::createResponse(response, "text/html; charset=utf-8");
 				}
 			}
 			else
-				response = responseIndex;
+			{
+				response = index;
+				size_t servernameLoc = response.find("<SERVERNAME>");
+				std::string servername = loadFromFile("servername.txt");
+				response.replace(servernameLoc, 12, servername);
+				response = http::createResponse(response, "text/html; charset=utf-8");
+			}
 			socket.send(response);
 		}
 		else if (path == "/audioTest")
@@ -83,7 +108,8 @@ int main() {
 		else if (path == "/getAudio") {
 			socket.send(responseAudio);
 			responseAudio = http::createResponse("", "application/octet-stream");
-		}else if (path == "/favicon.ico")
+		}
+		else if (path == "/favicon.ico")
 			socket.send(responseFavicon);
 		else if (path == "/image.png")
 			socket.send(responseImage);
