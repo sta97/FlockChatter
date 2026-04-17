@@ -42,9 +42,9 @@ int main() {
 	checkServername();
 
 	Networking::initWinSock();
-	Networking::ServerSocket serverSocket("80");
+	Networking::ServerSocket serverSocket("8000");
 
-	std::cout << "listening at http://127.0.0.1:80/" << std::endl;
+	std::cout << "listening at http://127.0.0.1:8000/" << std::endl;
 
 	std::string index = loadFromFile("assets/index.html");
 	std::string indexLoggedin = loadFromFile("assets/indexLoggedin.html");
