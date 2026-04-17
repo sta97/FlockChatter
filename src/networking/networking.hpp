@@ -40,6 +40,9 @@ namespace Networking
 
 namespace Networking
 {
+    int initWinSock();
+    void winSockCleanup();
+
     class ClientSocket {
     public:
         ClientSocket();
