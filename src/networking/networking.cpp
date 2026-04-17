@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
+#pragma comment(lib, "Ws2_32.lib")
+
 namespace Networking
 {
 	int initWinSock()

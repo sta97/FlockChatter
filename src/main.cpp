@@ -5,8 +5,6 @@
 #include "http/http.hpp"
 #include "login/login.hpp"
 
-#pragma comment(lib, "Ws2_32.lib")
-
 std::string loadFromFile(std::string filename) {
 	std::ifstream file(filename, std::ios::binary);  // Open the file
 
