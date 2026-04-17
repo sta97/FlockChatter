@@ -38,24 +38,27 @@ namespace Networking
 
 #ifdef __unix__
 
-class ClientSocket {
-public:
-    ClientSocket();
-    ClientSocket(int socket);
-    void send(std::string data);
-    std::string recv();
-    ~ClientSocket();
-private:
-    int socket;
-};
+namespace Networking
+{
+    class ClientSocket {
+    public:
+        ClientSocket();
+        ClientSocket(int socket);
+        void send(std::string data);
+        std::string recv();
+        ~ClientSocket();
+    private:
+        int socket;
+    };
 
-class ServerSocket {
-public:
-    ServerSocket(const char* port);
-    ClientSocket accept();
-    ~ServerSocket();
-private:
-    int socket;
-};
+    class ServerSocket {
+    public:
+        ServerSocket(const char* port);
+        ClientSocket accept();
+        ~ServerSocket();
+    private:
+        int socket;
+    };
+}
 
 #endif
