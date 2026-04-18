@@ -3,8 +3,15 @@
 #include <iostream>
 #include <random>
 #include <fstream>
+#include <stdexcept>
+#include <sodium.h>
 
 namespace login {
+
+    void initSodium() {
+        if (sodium_init() < 0)
+            throw std::runtime_error("sodium_init() failed");
+    }
 
     UserDatabase::UserDatabase()  {
         loadUsers();
@@ -59,7 +66,7 @@ namespace login {
     bool UserDatabase::login(std::string username, std::string password) {
         for (User u : users)
             if (u.username == username)
-                if (u.password == password)
+                if (crypto_pwhash_str_verify(u.password.c_str(), password.c_str(), password.size()) == 0)
                     return true;
                 else
                     return false;
@@ -89,10 +96,12 @@ namespace login {
             if (u.username == username)
                 return false;
         }
-
+        char hashed_password[crypto_pwhash_STRBYTES];
+        if (crypto_pwhash_str(hashed_password, password.c_str(), password.size(), crypto_pwhash_OPSLIMIT_SENSITIVE, crypto_pwhash_MEMLIMIT_SENSITIVE) != 0)
+            throw std::runtime_error("crypto_pwhash_str() out of memory");
         User u;
         u.username = username;
-        u.password = password;
+        u.password = std::string(hashed_password, crypto_pwhash_STRBYTES);
         u.id = id;
         users.push_back(u);
         saveUsers();

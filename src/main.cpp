@@ -36,6 +36,7 @@ void checkServername()
 }
 
 int main() {
+	login::initSodium();
 	login::UserDatabase users;
 	login::SessionDatabase sessions;
 

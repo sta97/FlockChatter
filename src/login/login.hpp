@@ -4,6 +4,8 @@
 #include <ctime>
 
 namespace login {
+    void initSodium();
+
     enum PermissionLevel {
         OWNER = 0,
         ADMIN = 1,
