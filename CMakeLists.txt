@@ -13,13 +13,14 @@ add_executable(FlockChatter
     src/login/login.cpp
 )
 
-find_package(unofficial-sodium CONFIG QUIET)
-
-if(unofficial-sodium_FOUND)
+if(WIN32)
+    find_package(unofficial-sodium CONFIG QUIET)
     target_link_libraries(FlockChatter PRIVATE unofficial-sodium::sodium)
 else()
-    find_package(sodium REQUIRED)
-    target_link_libraries(FlockChatter PRIVATE sodium)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SODIUM REQUIRED libsodium)
+    target_include_directories(FlockChatter PRIVATE ${SODIUM_INCLUDE_DIRS})
+    target_link_libraries(FlockChatter PRIVATE ${SODIUM_LIBRARIES})
 endif()
 
 add_custom_command(TARGET FlockChatter POST_BUILD
