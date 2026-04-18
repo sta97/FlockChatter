@@ -4,7 +4,7 @@ project(FlockChatter)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(unofficial-sodium CONFIG REQUIRED)
+
 
 add_executable(FlockChatter
     src/main.cpp
@@ -13,7 +13,14 @@ add_executable(FlockChatter
     src/login/login.cpp
 )
 
-target_link_libraries(FlockChatter PRIVATE unofficial-sodium::sodium)
+find_package(unofficial-sodium CONFIG QUIET)
+
+if(unofficial-sodium_FOUND)
+    target_link_libraries(FlockChatter PRIVATE unofficial-sodium::sodium)
+else()
+    find_package(sodium REQUIRED)
+    target_link_libraries(FlockChatter PRIVATE sodium)
+endif()
 
 add_custom_command(TARGET FlockChatter POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
