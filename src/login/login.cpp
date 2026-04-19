@@ -97,7 +97,7 @@ namespace login {
                 return false;
         }
         char hashed_password[crypto_pwhash_STRBYTES];
-        if (crypto_pwhash_str(hashed_password, password.c_str(), password.size(), crypto_pwhash_OPSLIMIT_SENSITIVE, crypto_pwhash_MEMLIMIT_SENSITIVE) != 0)
+        if (crypto_pwhash_str(hashed_password, password.c_str(), password.size(), crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
             throw std::runtime_error("crypto_pwhash_str() out of memory");
         User u;
         u.username = username;
