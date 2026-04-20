@@ -148,7 +148,7 @@ namespace login {
         std::mt19937 gen(rd());
 
         std::uniform_int_distribution<int> dist(
-            std::numeric_limits<int>::min(),
+            0,
             std::numeric_limits<int>::max()
         );
 

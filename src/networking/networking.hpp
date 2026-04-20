@@ -1,5 +1,15 @@
 #include <string>
 
+namespace Networking 
+{
+    enum MessageTypes {
+		ExchangePublicKey = 0,
+		Login = 1,
+		SetSession = 2,
+		ChatMessage = 3,
+	}
+}
+
 #ifdef _WIN32
 
 #include <winsock2.h>
@@ -19,6 +29,7 @@ namespace Networking
         ClientSocket(SOCKET socket);
         void send(std::string data);
         std::string recv();
+        bool isValid();
         ~ClientSocket();
     };
 

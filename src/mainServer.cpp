@@ -18,12 +18,43 @@ int main() {
 
 	std::cout << "listening at port 8000" << std::endl;
 
-	std::vector<Networking::ClientSocket> clients;
+	std::vector<Server::Client> clients;
+
+	std::string serverPublicKey;
 
 	while (true) {
 		Networking::ClientSocket socket = serverSocket.accept();
+		if(socket.isValid())
+		{
+			Server::Client client;
+			client.socket = socket;
+			clients.push_back(client);
+		}
 
-		std::string message = socket.recv();
+		for(auto client : clients)
+		{
+			std::string message = socket.recv();
+			if(message.size() == 0)
+				continue;
+			switch (message[0])
+			{
+			case Networking::MessageTypes::ExchangePublicKey:
+				client.publicKey = message.substr(1);
+				client.socket.send(std::to_string(Networking::MessageTypes::ExchangePublicKey) + serverPublicKey);
+				break;
+			case Networking::MessageTypes::SetSession:
+				client.session = std::stoi(message.substr(1));
+				break;
+			case Networking::MessageTypes::Login:
+				size_t middle = message.find('\n',1);
+				std::string username = message.substr(1, middle-1);
+				std::string password = message.substr(middle+1);
+				if (users.login())
+			default:
+				throw std::runtime_error("Unrecognized message type of " + (int)message[0]);
+			}
+		}
+		
 		//std::cout << "received:" << std::endl << message << std::endl << std::endl;
 		std::string path = http::getPath(message);
 		std::cout << "path: " << path << std::endl << std::endl;
