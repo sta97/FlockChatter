@@ -21,6 +21,9 @@ int main() {
 	std::vector<Server::Client> clients;
 
 	std::string serverPublicKey;
+	std::string serverPrivateKey;
+
+	std::vector<std::string> chatMessages;
 
 	while (true) {
 		Networking::ClientSocket socket = serverSocket.accept();
@@ -28,20 +31,18 @@ int main() {
 		{
 			Server::Client client;
 			client.socket = socket;
+			client.serverPublicKey = serverPublicKey;
+			client.serverPrivateKey = serverPrivateKey;
 			clients.push_back(client);
 		}
 
 		for(auto client : clients)
 		{
-			std::string message = socket.recv();
+			std::string message = client.recv();
 			if(message.size() == 0)
 				continue;
 			switch (message[0])
 			{
-			case Networking::MessageTypes::ExchangePublicKey:
-				client.publicKey = message.substr(1);
-				client.socket.send(std::to_string(Networking::MessageTypes::ExchangePublicKey) + serverPublicKey);
-				break;
 			case Networking::MessageTypes::SetSession:
 				client.session = std::stoi(message.substr(1));
 				break;
@@ -49,88 +50,41 @@ int main() {
 				size_t middle = message.find('\n',1);
 				std::string username = message.substr(1, middle-1);
 				std::string password = message.substr(middle+1);
-				if (users.login())
+				if (users.login(username, password))
+				{
+					int sessionID = sessions.startSession(userID);
+					client.session = sessionID;
+					std::string reply = std::to_string(Networking::MessageTypes::Login) + std::to_string(sessionID);
+					client.send(reply);
+				}
+				break;
+			case Networking::MessageTypes::Logout:
+				sessions.endSession(client.session);
+				break;
+			case Networking::MessageTypes::SendChatMessage:
+			// TODO: check if session ID is valid
+				std::string msg = message.substr(1);
+				size_t endOfID = msg.find(':');
+				int sessionID = std::stoi(msg.substr(0, endOfID-1));
+				int userID = sessions.getUserID(sessionID);
+				std::string username = users.findUsername(userID);
+				std::string chatMessage = msg.substr(endOfID+1);
+				std::string savedMessage = username + ": " + chatMessage;
+				chatMessages.push_back(savedMessage);
+				client.send(savedMessage);
+				break;
+			case Networking::MessageTypes::GetChatMessages:
+			// TODO: Check for valid session ID before providing messages
+				std::string msg;
+				msg += (char)Networking::MessageTypes::GetChatMessages;
+				for(auto chatMsg : chatMessages)
+					msg += chatMsg + "\n\n";
+				client.send(msg);
+				break;
 			default:
 				throw std::runtime_error("Unrecognized message type of " + (int)message[0]);
 			}
 		}
-		
-		//std::cout << "received:" << std::endl << message << std::endl << std::endl;
-		std::string path = http::getPath(message);
-		std::cout << "path: " << path << std::endl << std::endl;
-		std::vector<std::pair<std::string, std::string>> cookies = http::parseCookies(message);
-		if (path == "/") {
-			std::string response = indexLoggedin;
-			if (cookies.size() == 1) {
-				if (cookies[0].first == "session" && cookies[0].second != "") {
-					std::string user = users.findUsername(sessions.getUserID(std::stoi(cookies[0].second)));
-					size_t usernameStart = indexLoggedin.find("<USER>");
-					response.replace(usernameStart, 6, user);
-					size_t servernameLoc = response.find("<SERVERNAME>");
-					std::string servername = loadFromFile("servername.txt");
-					response.replace(servernameLoc, 12, servername);
-					response = http::createResponse(response, "text/html; charset=utf-8");
-				}
-				else {
-					response = index;
-					size_t servernameLoc = response.find("<SERVERNAME>");
-					std::string servername = loadFromFile("servername.txt");
-					response.replace(servernameLoc, 12, servername);
-					response = http::createResponse(response, "text/html; charset=utf-8");
-				}
-			}
-			else
-			{
-				response = index;
-				size_t servernameLoc = response.find("<SERVERNAME>");
-				std::string servername = loadFromFile("servername.txt");
-				response.replace(servernameLoc, 12, servername);
-				response = http::createResponse(response, "text/html; charset=utf-8");
-			}
-			socket.send(response);
-		}
-		else if (path == "/audioTest")
-			socket.send(responseAudioTest);
-		else if (path == "/sendAudio" && http::getBody(message).size() > 0)
-			responseAudio = http::createResponse(http::getBody(message), "application/octet-stream");
-		else if (path == "/getAudio") {
-			socket.send(responseAudio);
-			responseAudio = http::createResponse("", "application/octet-stream");
-		}
-		else if (path == "/favicon.ico")
-			socket.send(responseFavicon);
-		else if (path == "/image.png")
-			socket.send(responseImage);
-		else if (path == "/login") {
-			std::string response;
-			std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
-			std::vector<std::pair<std::string, std::string>> setCookies = {};
-			if (loginData.size() == 2) {
-				if (loginData[0].first == "username" && loginData[1].first == "password") {
-					if (users.login(loginData[0].second, loginData[1].second)) {
-						int userID = users.findID(loginData[0].second);
-						response = "<a href=\"/\">Home</a> <br /> logged in as " + loginData[0].second + " with user ID " + std::to_string(userID);
-						int sessionID = sessions.startSession(userID);
-						setCookies.push_back(std::make_pair("session", std::to_string(sessionID)));
-					}
-					else
-						response = "<a href=\"/\">Home</a> <br /> invalid username or password";
-				}
-				else
-					response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
-			}
-			else {
-				response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
-			}
-			response = http::createResponse(response, "text/html; charset=utf-8", setCookies);
-			socket.send(response);
-		}
-		else if (path == "/logout") {
-			sessions.endSession(std::stoi(cookies[0].second));
-			socket.send(responseLogout);
-		}
-		else
-			socket.send(response404);
 	}
 
 	Networking::winSockCleanup();

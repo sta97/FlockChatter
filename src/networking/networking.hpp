@@ -5,8 +5,10 @@ namespace Networking
     enum MessageTypes {
 		ExchangePublicKey = 0,
 		Login = 1,
-		SetSession = 2,
-		ChatMessage = 3,
+        Logout = 2,
+		SetSession = 3,
+		SendChatMessage = 4,
+        GetChatMessages = 5
 	}
 }
 
