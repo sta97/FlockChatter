@@ -173,6 +173,9 @@ namespace login {
     }
 
     int SessionDatabase::getUserID(int sessionID) {
-        return sessions[sessionID].first;
+        if(sessions.find(sessionID) == sessions.end())
+            return -1;
+        else
+            return sessions[sessionID].first;
     }
 }

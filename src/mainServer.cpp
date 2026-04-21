@@ -62,24 +62,32 @@ int main() {
 				sessions.endSession(client.session);
 				break;
 			case Networking::MessageTypes::SendChatMessage:
-			// TODO: check if session ID is valid
 				std::string msg = message.substr(1);
 				size_t endOfID = msg.find(':');
 				int sessionID = std::stoi(msg.substr(0, endOfID-1));
 				int userID = sessions.getUserID(sessionID);
-				std::string username = users.findUsername(userID);
-				std::string chatMessage = msg.substr(endOfID+1);
-				std::string savedMessage = username + ": " + chatMessage;
-				chatMessages.push_back(savedMessage);
-				client.send(savedMessage);
+				if(userID >= 0) {
+					std::string username = users.findUsername(userID);
+					std::string chatMessage = msg.substr(endOfID+1);
+					std::string savedMessage = message[0] + username + ": " + chatMessage;
+					chatMessages.push_back(savedMessage);
+					client.send(savedMessage);
+				} else {
+					client.send(message[0] + "Invalid session ID");
+				}
 				break;
 			case Networking::MessageTypes::GetChatMessages:
-			// TODO: Check for valid session ID before providing messages
-				std::string msg;
-				msg += (char)Networking::MessageTypes::GetChatMessages;
-				for(auto chatMsg : chatMessages)
-					msg += chatMsg + "\n\n";
-				client.send(msg);
+				int sessionID = std::stoi(message.substr(1));
+				int userID = sessions.getUserID(sessionID);
+				if(userID >= 0) {
+					std::string msg;
+					msg += (char)Networking::MessageTypes::GetChatMessages;
+					for(auto chatMsg : chatMessages)
+						msg += chatMsg + "\n\n";
+					client.send(msg);
+				} else {
+					client.send(message[0] + "Invalid session ID");
+				}
 				break;
 			default:
 				throw std::runtime_error("Unrecognized message type of " + (int)message[0]);
