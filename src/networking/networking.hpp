@@ -33,6 +33,10 @@ namespace Networking
         ClientSocket();
         ClientSocket(SOCKET socket);
         ClientSocket(std::string address, std::string port);
+        ClientSocket(const ClientSocket&) = delete;
+        ClientSocket& operator=(const ClientSocket&) = delete;
+        ClientSocket(ClientSocket&& other) noexcept;
+        ClientSocket& operator=(ClientSocket&& other) noexcept;
         void send(std::string data);
         std::string recv();
         bool isValid();

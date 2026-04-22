@@ -36,7 +36,7 @@ int main() {
 	login::initSodium();
 
 	Networking::initWinSock();
-	Networking::ClientSocket socket;
+	
 
 	bool connected = false;
 	bool loggedIn = false;
@@ -57,7 +57,7 @@ int main() {
 
 	std::cout << "connecting to server..." << std::endl;
 
-	socket = Networking::ClientSocket(serverAddress, "8000");
+	Networking::ClientSocket socket(serverAddress, "8000");
 	Sleep(1000);
 
 	std::cout << "Exchanging public keys..." << std::endl;

@@ -36,20 +36,24 @@ int main() {
 
 	std::vector<std::string> chatMessages;
 
+	int counter = 0;
+
 	while (true) {
+		std::cout << "run " << counter++ << std::endl;
 		Networking::ClientSocket socket = serverSocket.accept();
 		if(socket.isValid())
 		{
 			std::cout << "accepted new client!" << std::endl;
 			Server::Client client;
-			client.socket = socket;
+			client.socket = std::move(socket);
 			client.serverPublicKey = serverPublicKey;
 			client.serverPrivateKey = serverPrivateKey;
-			clients.push_back(client);
+			clients.push_back(std::move(client));
 		}
 
 		for(size_t i = 0; i < clients.size(); ++i)
 		{
+			std::cout << "client " << i << std::endl;
 			Server::Client &client = clients[i];
 			if (!client.socket.isValid())
 			{

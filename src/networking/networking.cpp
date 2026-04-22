@@ -46,6 +46,27 @@ namespace Networking
 		this->socket = socket;
 	}
 
+	ClientSocket::ClientSocket(ClientSocket&& other) noexcept
+		: socket(other.socket)
+	{
+		other.socket = INVALID_SOCKET;
+	}
+
+	ClientSocket& ClientSocket::operator=(ClientSocket&& other) noexcept
+	{
+		if (this != &other)
+		{
+			if (socket != INVALID_SOCKET)
+			{
+				closesocket(socket);
+			}
+
+			socket = other.socket;
+			other.socket = INVALID_SOCKET;
+		}
+		return *this;
+	}
+
 	ClientSocket::ClientSocket(std::string address, std::string port)
 	{
 		struct addrinfo* result = NULL,
@@ -133,8 +154,10 @@ namespace Networking
 	}
 
 	ClientSocket::~ClientSocket() {
+		std::cout << "client socket closed due to RAII " << socket << std::endl;
 		shutdown(socket, SD_SEND);
 		closesocket(socket);
+		socket = INVALID_SOCKET;
 	}
 
 	ServerSocket::ServerSocket(PCSTR port)

@@ -1,4 +1,5 @@
 #include "../networking/networking.hpp"
+#include <memory>
 
 namespace Server {
 void checkServername();
