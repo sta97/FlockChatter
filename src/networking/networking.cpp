@@ -154,7 +154,7 @@ namespace Networking
 	}
 
 	ClientSocket::~ClientSocket() {
-		std::cout << "client socket closed due to RAII " << socket << std::endl;
+		//std::cout << "client socket closed due to RAII " << socket << std::endl;
 		shutdown(socket, SD_SEND);
 		closesocket(socket);
 		socket = INVALID_SOCKET;

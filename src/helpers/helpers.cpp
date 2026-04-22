@@ -1,3 +1,6 @@
+#include "helpers.hpp"
+#include <fstream>
+
 namespace Helpers {
 std::string loadFromFile(std::string filename) {
 	std::ifstream file(filename, std::ios::binary);  // Open the file

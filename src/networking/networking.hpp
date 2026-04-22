@@ -4,14 +4,14 @@
 
 namespace Networking 
 {
-    enum MessageTypes {
-        ExchangePublicKey = 0,
-        Login = 1,
-        Logout = 2,
-        SetSession = 3,
-        SendChatMessage = 4,
-        GetChatMessages = 5,
-        GetServerName = 6
+    enum MessageTypes : char {
+        ExchangePublicKey = '0',
+        Login = '1',
+        Logout = '2',
+        SetSession = '3',
+        SendChatMessage = '4',
+        GetChatMessages = '5',
+        GetServerName = '6'
     };
 }
 

@@ -15,6 +15,7 @@ add_executable(FlockChatterServer
     src/networking/networking.cpp
     src/login/login.cpp
     src/server/server.cpp
+    src/helpers/helpers.cpp
 )
 
 if(WIN32)

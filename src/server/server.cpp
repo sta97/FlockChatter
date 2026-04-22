@@ -23,6 +23,11 @@ void checkServername()
 
     void Client::send(std::string message)
 	{
+		if (clientPublicKey.size() == 0)
+		{
+			std::cout << "clientPublicKey empty!" << std::endl;
+			return;
+		}
 		std::string msg = message.substr(1);
 		size_t ciphertextLen = crypto_box_SEALBYTES + msg.size();
 		std::vector<char> ciphertext;
@@ -44,14 +49,26 @@ void checkServername()
 			std::string reply = (char)Networking::MessageTypes::ExchangePublicKey + serverPublicKey;
 			send(reply);
 			return "";
-		} else {
+		}
+		else if (message.size() == 1)
+			return message;
+		else {
 			char type = message[0];
+			std::cout << "type " << message[0] << std::endl;
+			std::cout << "message " << message << std::endl;
 			std::string msg = message.substr(1);
+			if (msg.size() < crypto_box_SEALBYTES)
+			{
+				std::cout << "message of size " << msg.size() << " shorter than crypto_box_SEALBYTES";
+				return "";
+			}
 			size_t ciphertextLen = msg.size() - crypto_box_SEALBYTES;
 			std::vector<char> decrypted;
 			decrypted.resize(ciphertextLen);
-			if(crypto_box_seal_open((unsigned char *)decrypted.data(), (unsigned char *)msg.c_str(), msg.size(), (unsigned char *)serverPublicKey.c_str(), (unsigned char *)serverPrivateKey.c_str()) != 0)
-				throw std::runtime_error("crypto_box_seal_open() failed to decrypt ciphertext");
+			if (crypto_box_seal_open((unsigned char*)decrypted.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)serverPublicKey.c_str(), (unsigned char*)serverPrivateKey.c_str()) != 0) {
+				std::cout << "crypto_box_seal_open() failed to decrypt ciphertext" << std::endl;
+				return "";
+			}
 			decrypted.push_back(0);
 			std::string decryptedMessage = type + std::string(decrypted.data());
 			return decryptedMessage;

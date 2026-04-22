@@ -33,13 +33,12 @@ int main() {
 	serverPublicKey.resize(crypto_box_PUBLICKEYBYTES, 0);
 	serverPrivateKey.resize(crypto_box_SECRETKEYBYTES, 0);
 	crypto_box_keypair((unsigned char*)serverPublicKey.c_str(), (unsigned char*)serverPrivateKey.c_str());
+	std::cout << "serverPublicKey: " << serverPublicKey << std::endl;
+	std::cout << "serverPublicKey.size(): " << serverPublicKey.size() << std::endl;
 
 	std::vector<std::string> chatMessages;
 
-	int counter = 0;
-
 	while (true) {
-		std::cout << "run " << counter++ << std::endl;
 		Networking::ClientSocket socket = serverSocket.accept();
 		if(socket.isValid())
 		{
@@ -136,12 +135,19 @@ int main() {
 				}
 				break;
 			}
+			case Networking::MessageTypes::GetServerName: {
+				std::cout << "Request for server name" << std::endl;
+				std::string servername = Helpers::loadFromFile("servername.txt");
+				client.send(message[0] + servername);
+				break;
+			}
 			default: {
-				throw std::runtime_error("Unrecognized message type of " + (int)message[0]);
+				std::cout << "Unrecognized message type of " + (int)message[0] << std::endl;
+				break;
 			}
 			}
 		}
-		Sleep(1000);
+		//Sleep(1000);
 	}
 
 	Networking::winSockCleanup();

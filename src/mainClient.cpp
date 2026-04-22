@@ -11,10 +11,18 @@ std::string decrypt(std::string message, std::string clientPublicKey, std::strin
 	char type = message[0];
 	std::string msg = message.substr(1);
 	size_t ciphertextLen = msg.size() - crypto_box_SEALBYTES;
+	if (msg.size() < crypto_box_SEALBYTES)
+	{
+		std::cout << "message of size " << msg.size() << " shorter than crypto_box_SEALBYTES";
+		return "";
+	}
 	std::vector<char> decrypted;
 	decrypted.resize(ciphertextLen);
 	if (crypto_box_seal_open((unsigned char*)decrypted.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str()) != 0)
-		throw std::runtime_error("crypto_box_seal_open() failed to decrypt ciphertext");
+	{
+		std::cout << "crypto_box_seal_open() failed to decrypt ciphertext" << std::endl;
+		return "";
+	}
 	decrypted.push_back(0);
 	std::string decryptedMessage = type + std::string(decrypted.data());
 	return decryptedMessage;
@@ -58,7 +66,7 @@ int main() {
 	std::cout << "connecting to server..." << std::endl;
 
 	Networking::ClientSocket socket(serverAddress, "8000");
-	Sleep(1000);
+	//Sleep(1000);
 
 	std::cout << "Exchanging public keys..." << std::endl;
 
@@ -68,22 +76,27 @@ int main() {
 
 	while (message.size() == 0)
 	{
-		std::cout << "waiting..." << std::endl;
+		//std::cout << "waiting..." << std::endl;
 		message = socket.recv();
-		Sleep(1000);
+		//Sleep(1000);
 	}
+
+	std::cout << message << std::endl;
 
 	message = decrypt(message, clientPublicKey, clientPrivateKey);
 	serverPublicKey = message.substr(1);
 
+	std::cout << "serverPublicKey: " << serverPublicKey << std::endl;
+
 	std::cout << "Getting server name..." << std::endl;
 
-	socket.send(std::to_string((char)Networking::MessageTypes::GetServerName));
+	socket.send(std::string(1, Networking::MessageTypes::GetServerName));
 
+	message = "";
 	while (message.size() == 0) {
-		std::cout << "waiting..." << std::endl;
+		//std::cout << "waiting..." << std::endl;
 		message = socket.recv();
-		Sleep(1000);
+		//Sleep(1000);
 	}
 
 	message = decrypt(message, clientPublicKey, clientPrivateKey);
