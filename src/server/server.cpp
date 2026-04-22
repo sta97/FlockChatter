@@ -2,6 +2,8 @@
 #include <vector>
 #include <sodium.h>
 #include <stdexcept>
+#include <fstream>
+#include <iostream>
 
 namespace Server {
 void checkServername()

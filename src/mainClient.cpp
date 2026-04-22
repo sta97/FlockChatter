@@ -2,147 +2,93 @@
 #include <fstream>
 #include <string>
 #include "networking/networking.hpp"
-#include "http/http.hpp"
 #include "login/login.hpp"
+#include <windows.h>
+#include <sodium.h>
 
-std::string loadFromFile(std::string filename) {
-	std::ifstream file(filename, std::ios::binary);  // Open the file
-
-	if (!file.is_open()) {
-		throw std::runtime_error("Error: Could not open " + filename);
-	}
-
-	std::string fileContents((std::istreambuf_iterator<char>(file)),
-		(std::istreambuf_iterator<char>()));
-
-	file.close();
-
-	return fileContents;
+std::string decrypt(std::string message, std::string clientPublicKey, std::string clientPrivateKey)
+{
+	char type = message[0];
+	std::string msg = message.substr(1);
+	size_t ciphertextLen = msg.size() - crypto_box_SEALBYTES;
+	std::vector<char> decrypted;
+	decrypted.resize(ciphertextLen);
+	if (crypto_box_seal_open((unsigned char*)decrypted.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str()) != 0)
+		throw std::runtime_error("crypto_box_seal_open() failed to decrypt ciphertext");
+	decrypted.push_back(0);
+	std::string decryptedMessage = type + std::string(decrypted.data());
+	return decryptedMessage;
 }
 
-void checkServername()
+std::string encrypt(std::string message, std::string serverPublicKey)
 {
-	std::ifstream file("servername.txt");
-	std::string servername;
-	if (file.good())
-		file >> servername;
-	if (servername.size() == 0)
-	{
-		std::cout << "Enter server name: ";
-		std::cin >> servername;
-		std::ofstream file("servername.txt");
-		file << servername;
-	}
+	std::string msg = message.substr(1);
+	size_t ciphertextLen = crypto_box_SEALBYTES + msg.size();
+	std::vector<char> ciphertext;
+	ciphertext.resize(ciphertextLen, 0);
+	crypto_box_seal((unsigned char*)ciphertext.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)serverPublicKey.c_str());
+	ciphertext.push_back(0);
+	std::string reply = message[0] + std::string(ciphertext.data());
+	return reply;
 }
 
 int main() {
 	login::initSodium();
-	login::UserDatabase users;
-	login::SessionDatabase sessions;
-
-	checkServername();
 
 	Networking::initWinSock();
-	Networking::ServerSocket serverSocket("8000");
+	Networking::ClientSocket socket;
 
-	std::cout << "listening at http://127.0.0.1:8000/" << std::endl;
+	bool connected = false;
+	bool loggedIn = false;
 
-	std::string index = loadFromFile("assets/index.html");
-	std::string indexLoggedin = loadFromFile("assets/indexLoggedin.html");
-	std::string audioTest = loadFromFile("assets/audioTest.html");
-	std::string logout = loadFromFile("assets/logout.html");
-	std::string icon = loadFromFile("assets/favicon.ico");
-	std::string image = loadFromFile("assets/image.png");
+	std::string clientPrivateKey, clientPublicKey, serverPublicKey, serverAddress, username, password;
+	clientPublicKey.resize(crypto_box_PUBLICKEYBYTES, 0);
+	clientPrivateKey.resize(crypto_box_SECRETKEYBYTES, 0);
+	crypto_box_keypair((unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str());
 
-	std::string responseAudioTest = http::createResponse(audioTest, "text/html; charset=utf-8");
-	std::string responseLogout = http::createResponse(logout, "text/html; charset=utf-8", { {"session",""} });
-	std::string responseFavicon = http::createResponse(icon, "image/x-icon");
-	std::string responseImage = http::createResponse(image, "image/png");
-	std::string response404 = "HTTP/1.1 404 Not Found";
+	std::cout << "server address: ";
+	std::cin >> serverAddress;
 
-	std::string responseAudio = http::createResponse("", "application/octet-stream");
+	//std::cout << "username: ";
+	//std::cin >> username;
 
-	while (true) {
-		Networking::ClientSocket socket = serverSocket.accept();
+	//std::cout << "password: ";
+	//std::cin >> password;
 
-		std::string message = socket.recv();
-		//std::cout << "received:" << std::endl << message << std::endl << std::endl;
-		std::string path = http::getPath(message);
-		std::cout << "path: " << path << std::endl << std::endl;
-		std::vector<std::pair<std::string, std::string>> cookies = http::parseCookies(message);
-		if (path == "/") {
-			std::string response = indexLoggedin;
-			if (cookies.size() == 1) {
-				if (cookies[0].first == "session" && cookies[0].second != "") {
-					std::string user = users.findUsername(sessions.getUserID(std::stoi(cookies[0].second)));
-					size_t usernameStart = indexLoggedin.find("<USER>");
-					response.replace(usernameStart, 6, user);
-					size_t servernameLoc = response.find("<SERVERNAME>");
-					std::string servername = loadFromFile("servername.txt");
-					response.replace(servernameLoc, 12, servername);
-					response = http::createResponse(response, "text/html; charset=utf-8");
-				}
-				else {
-					response = index;
-					size_t servernameLoc = response.find("<SERVERNAME>");
-					std::string servername = loadFromFile("servername.txt");
-					response.replace(servernameLoc, 12, servername);
-					response = http::createResponse(response, "text/html; charset=utf-8");
-				}
-			}
-			else
-			{
-				response = index;
-				size_t servernameLoc = response.find("<SERVERNAME>");
-				std::string servername = loadFromFile("servername.txt");
-				response.replace(servernameLoc, 12, servername);
-				response = http::createResponse(response, "text/html; charset=utf-8");
-			}
-			socket.send(response);
-		}
-		else if (path == "/audioTest")
-			socket.send(responseAudioTest);
-		else if (path == "/sendAudio" && http::getBody(message).size() > 0)
-			responseAudio = http::createResponse(http::getBody(message), "application/octet-stream");
-		else if (path == "/getAudio") {
-			socket.send(responseAudio);
-			responseAudio = http::createResponse("", "application/octet-stream");
-		}
-		else if (path == "/favicon.ico")
-			socket.send(responseFavicon);
-		else if (path == "/image.png")
-			socket.send(responseImage);
-		else if (path == "/login") {
-			std::string response;
-			std::vector<std::pair<std::string, std::string>> loginData = http::parsePostBody(message);
-			std::vector<std::pair<std::string, std::string>> setCookies = {};
-			if (loginData.size() == 2) {
-				if (loginData[0].first == "username" && loginData[1].first == "password") {
-					if (users.login(loginData[0].second, loginData[1].second)) {
-						int userID = users.findID(loginData[0].second);
-						response = "<a href=\"/\">Home</a> <br /> logged in as " + loginData[0].second + " with user ID " + std::to_string(userID);
-						int sessionID = sessions.startSession(userID);
-						setCookies.push_back(std::make_pair("session", std::to_string(sessionID)));
-					}
-					else
-						response = "<a href=\"/\">Home</a> <br /> invalid username or password";
-				}
-				else
-					response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
-			}
-			else {
-				response = "<a href=\"/\">Home</a> <br /> Invalid login parameters";
-			}
-			response = http::createResponse(response, "text/html; charset=utf-8", setCookies);
-			socket.send(response);
-		}
-		else if (path == "/logout") {
-			sessions.endSession(std::stoi(cookies[0].second));
-			socket.send(responseLogout);
-		}
-		else
-			socket.send(response404);
+	std::cout << "connecting to server..." << std::endl;
+
+	socket = Networking::ClientSocket(serverAddress, "8000");
+	Sleep(1000);
+
+	std::cout << "Exchanging public keys..." << std::endl;
+
+	socket.send((char)Networking::MessageTypes::ExchangePublicKey + clientPublicKey);
+
+	std::string message = socket.recv();
+
+	while (message.size() == 0)
+	{
+		std::cout << "waiting..." << std::endl;
+		message = socket.recv();
+		Sleep(1000);
 	}
+
+	message = decrypt(message, clientPublicKey, clientPrivateKey);
+	serverPublicKey = message.substr(1);
+
+	std::cout << "Getting server name..." << std::endl;
+
+	socket.send(std::to_string((char)Networking::MessageTypes::GetServerName));
+
+	while (message.size() == 0) {
+		std::cout << "waiting..." << std::endl;
+		message = socket.recv();
+		Sleep(1000);
+	}
+
+	message = decrypt(message, clientPublicKey, clientPrivateKey);
+
+	std::cout << "server name: " << message.substr(1) << std::endl;
 
 	Networking::winSockCleanup();
 

@@ -1,15 +1,18 @@
+#pragma once
+
 #include <string>
 
 namespace Networking 
 {
     enum MessageTypes {
-		ExchangePublicKey = 0,
-		Login = 1,
+        ExchangePublicKey = 0,
+        Login = 1,
         Logout = 2,
-		SetSession = 3,
-		SendChatMessage = 4,
-        GetChatMessages = 5
-	}
+        SetSession = 3,
+        SendChatMessage = 4,
+        GetChatMessages = 5,
+        GetServerName = 6
+    };
 }
 
 #ifdef _WIN32
@@ -29,6 +32,7 @@ namespace Networking
     public:
         ClientSocket();
         ClientSocket(SOCKET socket);
+        ClientSocket(std::string address, std::string port);
         void send(std::string data);
         std::string recv();
         bool isValid();

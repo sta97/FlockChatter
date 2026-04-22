@@ -12,5 +12,5 @@ struct Client {
     int session = -1;
     void send(std::string message);
     std::string recv();
-}
+};
 }
