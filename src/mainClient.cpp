@@ -84,9 +84,11 @@ int main() {
 	std::cout << message << std::endl;
 
 	message = decrypt(message, clientPublicKey, clientPrivateKey);
-	serverPublicKey = message.substr(1);
 
-	std::cout << "serverPublicKey: " << serverPublicKey << std::endl;
+	if(message.size() > 2)
+		serverPublicKey = message.substr(1);
+
+	std::cout << "serverPublicKey.size(): " << serverPublicKey.size() << std::endl;
 
 	std::cout << "Getting server name..." << std::endl;
 
@@ -101,9 +103,12 @@ int main() {
 
 	message = decrypt(message, clientPublicKey, clientPrivateKey);
 
-	std::cout << "server name: " << message.substr(1) << std::endl;
+	if(message.size() > 2)
+		std::cout << "server name: " << message.substr(1) << std::endl;
 
 	Networking::winSockCleanup();
+
+	Sleep(10000);
 
 	return 0;
 }

@@ -35,6 +35,7 @@ void checkServername()
 		crypto_box_seal((unsigned char *)ciphertext.data(), (unsigned char *)msg.c_str(), msg.size(), (unsigned char *)clientPublicKey.c_str());
 		ciphertext.push_back(0);
 		std::string reply = message[0] + std::string(ciphertext.data());
+		std::cout << "unencrypted message size: " << message.size() << std::endl << "encrypted message size: " << reply.size() << std::endl;
 		socket.send(reply);
 	}
 

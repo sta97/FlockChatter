@@ -119,7 +119,6 @@ namespace Networking
 	}
 
 	void ClientSocket::send(std::string data) {
-		std::cout << "sending data of size: " << data.size() << std::endl;
 		int iSendResult = ::send(socket, data.c_str(), (int) data.size(), 0);
 		std::cout << "sent data of size: " << iSendResult << std::endl;
 		if (iSendResult == SOCKET_ERROR) {

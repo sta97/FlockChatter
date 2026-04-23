@@ -33,7 +33,6 @@ int main() {
 	serverPublicKey.resize(crypto_box_PUBLICKEYBYTES, 0);
 	serverPrivateKey.resize(crypto_box_SECRETKEYBYTES, 0);
 	crypto_box_keypair((unsigned char*)serverPublicKey.c_str(), (unsigned char*)serverPrivateKey.c_str());
-	std::cout << "serverPublicKey: " << serverPublicKey << std::endl;
 	std::cout << "serverPublicKey.size(): " << serverPublicKey.size() << std::endl;
 
 	std::vector<std::string> chatMessages;
@@ -147,7 +146,7 @@ int main() {
 			}
 			}
 		}
-		//Sleep(1000);
+		Sleep(10);
 	}
 
 	Networking::winSockCleanup();
