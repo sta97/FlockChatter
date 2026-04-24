@@ -20,7 +20,10 @@ add_executable(FlockChatterServer
 
 if(WIN32)
     find_package(unofficial-sodium CONFIG QUIET)
-    target_link_libraries(FlockChatterClient PRIVATE unofficial-sodium::sodium)
+    find_package(SDL3 CONFIG REQUIRED)
+    find_package(imgui CONFIG REQUIRED)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(FlockChatterClient PRIVATE unofficial-sodium::sodium SDL3::SDL3 imgui::imgui OpenGL::GL)
     target_link_libraries(FlockChatterServer PRIVATE unofficial-sodium::sodium)
 else()
     find_package(PkgConfig REQUIRED)
