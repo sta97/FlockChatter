@@ -120,7 +120,8 @@ namespace Networking
 
 	void ClientSocket::send(std::string data) {
 		int iSendResult = ::send(socket, data.c_str(), (int) data.size(), 0);
-		std::cout << "sent data of size: " << iSendResult << std::endl;
+		if(iSendResult > 0)
+			std::cout << "sent data of size: " << iSendResult << std::endl;
 		if (iSendResult == SOCKET_ERROR) {
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 				return;
@@ -135,8 +136,9 @@ namespace Networking
 		buffer.resize(1048576);
 
 		int result = ::recv(socket, buffer.data(), ((int)buffer.size()) - 1, 0);
-		std::cout << "recv data of size " << result << std::endl;
+		
 		if (result > 0) {
+			std::cout << "recv data of size " << result << std::endl;
 			return std::string(buffer.data(), result);
 		}
 		else if (result == 0) {
@@ -145,7 +147,7 @@ namespace Networking
 		else {
 			if (WSAGetLastError() == WSAEWOULDBLOCK)
 				return std::string();
-			std::cout << "recv failed: " << WSAGetLastError() << std::endl;
+			//std::cout << "recv failed: " << WSAGetLastError() << std::endl;
 			closesocket(socket);
 			this->socket = INVALID_SOCKET;
 			return std::string();

@@ -51,7 +51,6 @@ int main() {
 
 		for(size_t i = 0; i < clients.size(); ++i)
 		{
-			std::cout << "client " << i << std::endl;
 			Server::Client &client = clients[i];
 			if (!client.socket.isValid())
 			{
@@ -60,9 +59,10 @@ int main() {
 				continue;
 			}
 			std::string message = client.recv();
-			std::cout << message.size() << std::endl;
 			if(message.size() == 0)
 				continue;
+			std::cout << "client " << i << std::endl;
+			std::cout << message.size() << std::endl;
 			switch (message[0])
 			{
 			case Networking::MessageTypes::SetSession: {
@@ -146,7 +146,7 @@ int main() {
 			}
 			}
 		}
-		Sleep(10);
+		//Sleep(10);
 	}
 
 	Networking::winSockCleanup();

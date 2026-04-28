@@ -46,6 +46,13 @@ std::string encrypt(std::string message, std::string serverPublicKey)
 	return reply;
 }
 
+enum ConnectionState {
+    Disconnected,
+    Connecting,
+    Connected,
+    LoggedIn
+};
+
 int main() {
     // Setup SDL
 // [If using SDL_MAIN_USE_CALLBACKS: all code below until the main loop starts would likely be your SDL_AppInit() function]
@@ -133,22 +140,20 @@ int main() {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     std::vector<char> connectAddress;
-    connectAddress.resize(100);
+    connectAddress.resize(100, 0);
 
     login::initSodium();
 
     Networking::initWinSock();
 
-    bool connecting = false;
-    bool connected = false;
-    bool loggedIn = false;
+    ConnectionState connectionState = ConnectionState::Disconnected;
 
-    std::string clientPrivateKey, clientPublicKey, serverPublicKey, serverAddress, username, password;
+    std::string clientPrivateKey, clientPublicKey, serverPublicKey, serverAddress, username, password, serverName;
     clientPublicKey.resize(crypto_box_PUBLICKEYBYTES, 0);
     clientPrivateKey.resize(crypto_box_SECRETKEYBYTES, 0);
     crypto_box_keypair((unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str());
     
-    Networking::ClientSocket socket(serverAddress, "8000");
+    Networking::ClientSocket socket;
     // Main loop
     bool done = false;
 
@@ -170,6 +175,39 @@ int main() {
                 done = true;
         }
 
+        std::string message = socket.recv();
+        if (message.size() > 0)
+        {
+            switch (connectionState)
+            {
+            case ConnectionState::Disconnected:
+                break;
+            case ConnectionState::Connecting: {
+                message = decrypt(message, clientPublicKey, clientPrivateKey);
+
+                if (message.size() > 2) {
+                    serverPublicKey = message.substr(1);
+                    connectionState = ConnectionState::Connected;
+                }
+                break;
+            }
+            case ConnectionState::Connected: {
+                if (serverName.size() == 0 && message[0] == Networking::MessageTypes::GetServerName) {
+                    message = decrypt(message, clientPublicKey, clientPrivateKey);
+                    serverName = message.substr(1);
+                }
+                    
+                break;
+            }
+            }
+        }
+
+        if (serverName.size() == 0 && connectionState == ConnectionState::Connected) {
+            socket.send(std::string(1, Networking::MessageTypes::GetServerName));
+            Sleep(100);
+        }
+        
+
         // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your SDL_AppIterate() function]
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         {
@@ -182,13 +220,42 @@ int main() {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Connect To Server");   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text("Enter server address");
-        ImGui::InputText("", connectAddress.data(), connectAddress.size());
-        if (ImGui::Button("Connect"))
+        ImGui::Begin("Connection State");
+        switch (connectionState)
         {
-            
+        case ConnectionState::Disconnected: {
+            ImGui::Text("Disconnected");
+               // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Text("Enter server address");
+            ImGui::InputText("Address", connectAddress.data(), connectAddress.size());
+            if (ImGui::Button("Connect"))
+            {
+                serverAddress = connectAddress.data();
+                socket = Networking::ClientSocket(serverAddress, "8000");
+                socket.send((char)Networking::MessageTypes::ExchangePublicKey + clientPublicKey);
+                connectionState = ConnectionState::Connecting;
+            }
+            break;
         }
+        case ConnectionState::Connecting: {
+            std::string text = "Connecting to " + serverAddress + "...";
+            ImGui::Text(text.c_str());
+            break;
+        }
+        case ConnectionState::Connected: {
+            std::string text = "Connected to " + serverAddress;
+            ImGui::Text(text.c_str());
+            if (serverName.size() == 0)
+            ImGui::Text("Getting server name...");
+            else {
+                std::string text2 = "Connected to " + serverName;
+                ImGui::Text(text2.c_str());
+            }
+            break;
+        }
+
+        }
+        
         ImGui::End();
         
 
