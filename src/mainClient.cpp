@@ -156,6 +156,7 @@ int main() {
     Networking::ClientSocket socket;
     // Main loop
     bool done = false;
+    bool connectionFailed = false;
 
     while (!done)
     {
@@ -173,6 +174,11 @@ int main() {
                 done = true;
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
+        }
+
+        if (!socket.isValid() && connectionState != ConnectionState::Disconnected) {
+            connectionState = ConnectionState::Disconnected;
+            connectionFailed = true;
         }
 
         std::string message = socket.recv();
@@ -234,7 +240,10 @@ int main() {
                 socket = Networking::ClientSocket(serverAddress, "8000");
                 socket.send((char)Networking::MessageTypes::ExchangePublicKey + clientPublicKey);
                 connectionState = ConnectionState::Connecting;
+                connectionFailed = false;
             }
+            if (connectionFailed)
+                ImGui::Text("Connection Failed");
             break;
         }
         case ConnectionState::Connecting: {
