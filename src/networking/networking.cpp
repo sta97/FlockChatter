@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <sodium.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -159,6 +160,102 @@ namespace Networking
 		shutdown(socket, SD_SEND);
 		closesocket(socket);
 		socket = INVALID_SOCKET;
+	}
+
+	EncryptedProtocolSocket::EncryptedProtocolSocket()
+	{
+		
+	}
+	
+	EncryptedProtocolSocket::EncryptedProtocolSocket(ClientSocket socket, std::string recvPubKey, std::string recvPrivKey)
+	{
+		this->recvPubKey = recvPubKey;
+		this->recvPrivKey = recvPrivKey;
+		this->socket = std::move(socket);
+		this->socket.send(recvPubKey);
+	}
+	
+	EncryptedProtocolSocket::EncryptedProtocolSocket(std::string address, std::string port, std::string recvPubKey, std::string recvPrivKey)
+	{
+		this->recvPubKey = recvPubKey;
+		this->recvPrivKey = recvPrivKey;
+		this->socket = ClientSocket(address, port);
+		this->socket.send(recvPubKey);
+	}
+
+	std::string decrypt(std::string message, std::string clientPublicKey, std::string clientPrivateKey)
+	{
+		size_t ciphertextLen = message.size() - crypto_box_SEALBYTES;
+		if (message.size() < crypto_box_SEALBYTES)
+		{
+			std::cout << "message of size " << message.size() << " shorter than crypto_box_SEALBYTES";
+			return "";
+		}
+		std::vector<char> decrypted;
+		decrypted.resize(ciphertextLen);
+		if (crypto_box_seal_open((unsigned char*)decrypted.data(), (unsigned char*)message.c_str(), message.size(), (unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str()) != 0)
+		{
+			std::cout << "crypto_box_seal_open() failed to decrypt ciphertext" << std::endl;
+			return "";
+		}
+		std::string decryptedMessage = std::string(decrypted.data(), ciphertextLen);
+		return decryptedMessage;
+	}
+
+	std::string encrypt(std::string message, std::string serverPublicKey)
+	{
+		size_t ciphertextLen = crypto_box_SEALBYTES + message.size();
+		std::vector<char> ciphertext;
+		ciphertext.resize(ciphertextLen, 0);
+		crypto_box_seal((unsigned char*)ciphertext.data(), (unsigned char*)message.c_str(), message.size(), (unsigned char*)serverPublicKey.c_str());
+		std::string reply = std::string(ciphertext.data(), ciphertextLen);
+		return reply;
+	}
+
+	void EncryptedProtocolSocket::send(std::string data)
+	{
+		if (sendPubKey.size() == 0)
+			return;
+		std::string dataEncrypted = encrypt(data, sendPubKey);
+		size_t size = dataEncrypted.size();
+		char first = size & 0xFF;
+		char second = (size >> 8) & 0xFF;
+		std::string reply = std::string(1, first) + std::string(1, second) + dataEncrypted;
+		socket.send(reply);
+	}
+
+	std::string EncryptedProtocolSocket::recv()
+	{
+		recvBuf += socket.recv();
+		if (sendPubKey.size() == 0)
+		{
+			if (recvBuf.size() > 0) {
+				sendPubKey = recvBuf;
+				recvBuf = "";
+			}
+		}
+		else
+		{
+			if (recvBuf.size() >= 2)
+			{
+				size_t recvSize = (size_t)recvBuf[0] + (size_t)recvBuf[1] << 8;
+				if (recvBuf.size() + 2 >= recvSize)
+				{
+					std::string reply = recvBuf.substr(2, recvSize);
+					if (recvBuf.size() + 2 > recvSize)
+					{
+						recvBuf = recvBuf.substr(recvSize + 2);
+					}
+					return reply;
+				}
+			}
+		}
+		return "";
+	}
+
+	bool EncryptedProtocolSocket::isValid()
+	{
+		return socket.isValid();
 	}
 
 	ServerSocket::ServerSocket(PCSTR port)

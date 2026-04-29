@@ -12,39 +12,7 @@
 #include <SDL3/SDL.h>
 #include <GL/gl.h>
 
-std::string decrypt(std::string message, std::string clientPublicKey, std::string clientPrivateKey)
-{
-	char type = message[0];
-	std::string msg = message.substr(1);
-	size_t ciphertextLen = msg.size() - crypto_box_SEALBYTES;
-	if (msg.size() < crypto_box_SEALBYTES)
-	{
-		std::cout << "message of size " << msg.size() << " shorter than crypto_box_SEALBYTES";
-		return "";
-	}
-	std::vector<char> decrypted;
-	decrypted.resize(ciphertextLen);
-	if (crypto_box_seal_open((unsigned char*)decrypted.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)clientPublicKey.c_str(), (unsigned char*)clientPrivateKey.c_str()) != 0)
-	{
-		std::cout << "crypto_box_seal_open() failed to decrypt ciphertext" << std::endl;
-		return "";
-	}
-	decrypted.push_back(0);
-	std::string decryptedMessage = type + std::string(decrypted.data());
-	return decryptedMessage;
-}
 
-std::string encrypt(std::string message, std::string serverPublicKey)
-{
-	std::string msg = message.substr(1);
-	size_t ciphertextLen = crypto_box_SEALBYTES + msg.size();
-	std::vector<char> ciphertext;
-	ciphertext.resize(ciphertextLen, 0);
-	crypto_box_seal((unsigned char*)ciphertext.data(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)serverPublicKey.c_str());
-	ciphertext.push_back(0);
-	std::string reply = message[0] + std::string(ciphertext.data());
-	return reply;
-}
 
 enum ConnectionState {
     Disconnected,

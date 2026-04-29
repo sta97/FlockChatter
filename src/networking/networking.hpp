@@ -43,6 +43,19 @@ namespace Networking
         ~ClientSocket();
     };
 
+    class EncryptedProtocolSocket
+    {
+        ClientSocket socket;
+        std::string recvPubKey, recvPrivKey, sendPubKey, recvBuf;
+    public:
+        EncryptedProtocolSocket();
+        EncryptedProtocolSocket(ClientSocket socket, std::string recvPubKey, std::string recvPrivKey);
+        EncryptedProtocolSocket(std::string address, std::string port, std::string recvPubKey, std::string recvPrivKey);
+        void send(std::string data);
+        std::string recv();
+        bool isValid();
+    };
+
     class ServerSocket
     {
         SOCKET socket;
